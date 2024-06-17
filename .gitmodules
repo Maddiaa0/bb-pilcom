@@ -1,0 +1,5 @@
+[submodule "powdr"]
+	path = powdr
+	url = https://github.com/powdr-labs/powdr
+	ignore = dirty
+	sparse = true
