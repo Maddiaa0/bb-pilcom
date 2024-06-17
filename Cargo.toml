@@ -1,6 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
+    "bberg_pil_cli",
     "bberg",
     "powdr/ast",
     "powdr/number",
@@ -19,6 +20,7 @@ repository = "https://github.com/powdr-labs/powdr"
 
 [workspace.dependencies]
 bberg = { path = "./bberg" }
+bberg_pil_cli = { path = "./bberg_pil_cli" }
 powdr-ast = { path = "./powdr/ast" }
 powdr-number = { path = "./powdr/number" }
 powdr-parser = { path = "./powdr/parser" }
