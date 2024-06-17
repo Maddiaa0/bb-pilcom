@@ -1,5 +1,6 @@
 [submodule "powdr"]
 	path = powdr
-	url = https://github.com/powdr-labs/powdr
+	url = https://github.com/Maddiaa0/powdr
+	branch = md/minimal
 	ignore = dirty
 	sparse = true
