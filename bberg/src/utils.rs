@@ -47,10 +47,9 @@ where
 /// Transforms columns from powdr representation ( where the witnesses are linked )
 /// Into a version where we just keep the columns
 /// As this is all we are about
-pub fn collect_col<F, Func>(list: &[(String, Vec<F>)], op: Func) -> Vec<String>
+pub fn collect_col<Func>(list: &[String], op: Func) -> Vec<String>
 where
-    F: FieldElement,
-    Func: Fn(&(String, Vec<F>)) -> String,
+    Func: Fn(&String) -> String,
 {
     list.iter().map(op).collect::<Vec<String>>()
 }

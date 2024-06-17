@@ -12,7 +12,9 @@ path = "src/main.rs"
 [dependencies]
 clap = { version = "^4.3", features = ["derive"] }
 num-bigint = "0.4.3"
+bberg ={ path = "../bberg" }
 
+powdr-pil-analyzer ={ path = "../powdr/pil-analyzer" }
 powdr-number = { path = "../powdr/number" }
 num-traits = "0.2.15"
 num-integer = "0.1.45"

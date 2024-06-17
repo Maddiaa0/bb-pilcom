@@ -1,7 +1,10 @@
 use std::{io, path::Path};
 
+use bberg::vm_builder::analyzed_to_cpp;
 use clap::Parser;
+use powdr_ast::analyzed::{Analyzed, FunctionValueDefinition, Symbol};
 use powdr_number::Bn254Field;
+use powdr_pil_analyzer::analyze_file;
 
 #[derive(Parser)]
 #[command(name = "bberg_pil", author, version, about, long_about = None)]
@@ -19,25 +22,34 @@ struct Cli {
     name: Option<String>,
 }
 
+fn extract_col_name(cols: Vec<&(Symbol, Option<FunctionValueDefinition>)>) -> Vec<String> {
+    // Note that function val def should be none
+    cols.iter().map(|(sym, def)| {
+        sym.absolute_name.replace(".", "_")
+    }).collect()
+}
+
 
 fn main() -> Result<(), io::Error> {
     let args = Cli::parse();
 
     let file_name = args.file;
-    let output_dir = Path::new(&args.output_directory);
     let name = args.name;
-    let inputs: Vec<Bn254Field> = Vec::new();
-    // let prove_with = Some(BackendType::BBerg);
-    let external_witness_values = Vec::new();
 
+    println!("FILE NAME MAIN , {file_name}");
 
-    // compile_pil(
-    //     Path::new(&file_name),
-    //     output_dir,
-    //     inputs_to_query_callback(inputs),
-    //     prove_with,
-    //     external_witness_values,
-    //     name,
-    // );
+    println!("{}", Path::new(&file_name).display());
+
+    let analyzed: Analyzed<Bn254Field> = analyze_file(Path::new(&file_name));
+
+    let fixed = analyzed.constant_polys_in_source_order();
+    let witness = analyzed.committed_polys_in_source_order();
+
+    analyzed_to_cpp(
+        &analyzed,
+        &extract_col_name(fixed),
+        &extract_col_name(witness),
+        name,
+    );
     Ok(())
 }

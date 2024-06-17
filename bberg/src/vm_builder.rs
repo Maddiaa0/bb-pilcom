@@ -49,10 +49,10 @@ struct ColumnGroups {
 /// Analyzed to cpp
 ///
 /// Converts an analyzed pil AST into a set of cpp files that can be used to generate a proof
-pub(crate) fn analyzed_to_cpp<F: FieldElement>(
+pub fn analyzed_to_cpp<F: FieldElement>(
     analyzed: &Analyzed<F>,
-    fixed: &[(String, Vec<F>)],
-    witness: &[(String, Vec<F>)],
+    fixed: &[String],
+    witness: &[String],
     name: Option<String>,
 ) {
     // Extract public inputs information.
@@ -68,10 +68,6 @@ pub(crate) fn analyzed_to_cpp<F: FieldElement>(
         })
         .collect();
     public_inputs.sort_by(|a, b| a.1.cmp(&b.1));
-
-    // Sort fixed and witness to ensure consistent ordering
-    let fixed = &sort_cols(fixed);
-    let witness = &sort_cols(witness);
 
     let file_name: &str = &name.unwrap_or("Example".to_owned());
     let mut bb_files = BBFiles::default(file_name.to_owned());
@@ -168,9 +164,9 @@ pub(crate) fn analyzed_to_cpp<F: FieldElement>(
 /// - unshifted
 /// - to_be_shifted
 /// - all_cols_with_shifts
-fn get_all_col_names<F: FieldElement>(
-    fixed: &[(String, Vec<F>)],
-    witness: &[(String, Vec<F>)],
+fn get_all_col_names(
+    fixed: &[String],
+    witness: &[String],
     to_be_shifted: &[String],
     permutations: &[Permutation],
     lookups: &[Lookup],
@@ -178,7 +174,7 @@ fn get_all_col_names<F: FieldElement>(
     log::info!("Getting all column names");
 
     // Transformations
-    let sanitize = |(name, _): &(String, Vec<F>)| sanitize_name(name).to_owned();
+    let sanitize = |name: &String| sanitize_name(name).to_owned();
     let append_shift = |name: &String| format!("{}_shift", *name);
 
     let perm_inverses = get_inverses_from_permutations(permutations);

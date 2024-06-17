@@ -10,6 +10,7 @@ use powdr_ast::parsed::SelectedExpressions;
 use itertools::Itertools;
 use std::collections::HashMap;
 use std::collections::HashSet;
+use std::path::Path;
 
 use powdr_number::{BigUint, DegreeType, FieldElement};
 
@@ -209,7 +210,13 @@ fn group_relations_per_file<F: FieldElement>(
     identities
         .iter()
         .cloned()
-        .into_group_map_by(|identity| identity.source.file_name.as_ref().unwrap().replace(".pil", ""))
+        .into_group_map_by(|identity| 
+            identity.source.file_name
+                .as_ref()
+                .map(|file_name| Path::new(file_name.as_ref()).file_stem())
+                .flatten()
+                .map(|stem| stem.to_string_lossy().into_owned())
+                .unwrap_or_else(|| String::new()).replace(".pil", ""))
 }
 
 fn relation_class_boilerplate(

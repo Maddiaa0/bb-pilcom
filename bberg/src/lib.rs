@@ -1,4 +1,3 @@
-pub mod bberg_codegen;
 mod circuit_builder;
 mod composer_builder;
 mod file_writer;
