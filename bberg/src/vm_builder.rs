@@ -1,4 +1,4 @@
-use powdr_ast::analyzed::{Analyzed, FunctionValueDefinition};
+use powdr_ast::analyzed::Analyzed;
 use powdr_number::FieldElement;
 
 use crate::circuit_builder::CircuitBuilder;
@@ -53,21 +53,20 @@ pub fn analyzed_to_cpp<F: FieldElement>(
     analyzed: &Analyzed<F>,
     fixed: &[String],
     witness: &[String],
+    public: &[String],
     name: Option<String>,
 ) {
     // Extract public inputs information.
-    let mut public_inputs: Vec<(String, usize)> = analyzed
-        .definitions
+    let mut public_inputs: Vec<(String, usize)> = public
         .iter()
-        .filter_map(|(name, def)| {
-            if let (_, Some(FunctionValueDefinition::Number(idx))) = def {
-                Some((sanitize_name(name), *idx))
-            } else {
-                None
-            }
-        })
+        .enumerate()
+        .map(|(i, name)| (sanitize_name(name), i))
         .collect();
     public_inputs.sort_by(|a, b| a.1.cmp(&b.1));
+
+    // Sort fixed and witness to ensure consistent ordering
+    let fixed = &sort_cols(fixed);
+    let witness = &sort_cols(witness);
 
     let file_name: &str = &name.unwrap_or("Example".to_owned());
     let mut bb_files = BBFiles::default(file_name.to_owned());
@@ -106,7 +105,14 @@ pub fn analyzed_to_cpp<F: FieldElement>(
         shifted,
         all_cols_with_shifts,
         inverses,
-    } = get_all_col_names(fixed, witness, &shifted_polys, &permutations, &lookups);
+    } = get_all_col_names(
+        fixed,
+        witness,
+        public,
+        &shifted_polys,
+        &permutations,
+        &lookups,
+    );
 
     bb_files.create_declare_views(file_name, &all_cols_with_shifts);
 
@@ -167,6 +173,7 @@ pub fn analyzed_to_cpp<F: FieldElement>(
 fn get_all_col_names(
     fixed: &[String],
     witness: &[String],
+    public: &[String],
     to_be_shifted: &[String],
     permutations: &[Permutation],
     lookups: &[Lookup],
@@ -184,9 +191,19 @@ fn get_all_col_names(
     // Gather sanitized column names
     let fixed_names = collect_col(fixed, sanitize);
     let witness_names = collect_col(witness, sanitize);
+    let public_names = collect_col(public, sanitize);
     let inverses = flatten(&[perm_inverses, lookup_inverses]);
-    let witnesses_without_inverses = flatten(&[witness_names.clone(), lookup_counts.clone()]);
-    let witnesses_with_inverses = flatten(&[witness_names, inverses.clone(), lookup_counts]);
+    let witnesses_without_inverses = flatten(&[
+        public_names.clone(),
+        witness_names.clone(),
+        lookup_counts.clone(),
+    ]);
+    let witnesses_with_inverses = flatten(&[
+        public_names.clone(),
+        witness_names,
+        inverses.clone(),
+        lookup_counts,
+    ]);
 
     // Group columns by properties
     let shifted = transform_map(to_be_shifted, append_shift);

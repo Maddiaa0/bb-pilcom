@@ -24,11 +24,10 @@ struct Cli {
 
 fn extract_col_name(cols: Vec<&(Symbol, Option<FunctionValueDefinition>)>) -> Vec<String> {
     // Note that function val def should be none
-    cols.iter().map(|(sym, def)| {
-        sym.absolute_name.replace(".", "_")
-    }).collect()
+    cols.iter()
+        .map(|(sym, _def)| sym.absolute_name.replace(".", "_"))
+        .collect()
 }
-
 
 fn main() -> Result<(), io::Error> {
     let args = Cli::parse();
@@ -36,19 +35,17 @@ fn main() -> Result<(), io::Error> {
     let file_name = args.file;
     let name = args.name;
 
-    println!("FILE NAME MAIN , {file_name}");
-
-    println!("{}", Path::new(&file_name).display());
-
     let analyzed: Analyzed<Bn254Field> = analyze_file(Path::new(&file_name));
 
     let fixed = analyzed.constant_polys_in_source_order();
     let witness = analyzed.committed_polys_in_source_order();
+    let public = analyzed.public_polys_in_source_order();
 
     analyzed_to_cpp(
         &analyzed,
         &extract_col_name(fixed),
         &extract_col_name(witness),
+        &extract_col_name(public),
         name,
     );
     Ok(())

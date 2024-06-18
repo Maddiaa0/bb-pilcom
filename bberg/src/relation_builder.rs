@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use powdr_ast::analyzed::AlgebraicBinaryOperation;
 use powdr_ast::analyzed::AlgebraicExpression;
 use powdr_ast::analyzed::AlgebraicUnaryOperation;
@@ -7,7 +8,6 @@ use powdr_ast::analyzed::{
     IdentityKind,
 };
 use powdr_ast::parsed::SelectedExpressions;
-use itertools::Itertools;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::path::Path;
@@ -207,16 +207,16 @@ namespace bb::{root_name}_vm {{
 fn group_relations_per_file<F: FieldElement>(
     identities: &[Identity<AlgebraicExpression<F>>],
 ) -> HashMap<String, Vec<Identity<AlgebraicExpression<F>>>> {
-    identities
-        .iter()
-        .cloned()
-        .into_group_map_by(|identity| 
-            identity.source.file_name
-                .as_ref()
-                .map(|file_name| Path::new(file_name.as_ref()).file_stem())
-                .flatten()
-                .map(|stem| stem.to_string_lossy().into_owned())
-                .unwrap_or_else(|| String::new()).replace(".pil", ""))
+    identities.iter().cloned().into_group_map_by(|identity| {
+        identity
+            .source
+            .file_name
+            .as_ref()
+            .and_then(|file_name| Path::new(file_name.as_ref()).file_stem())
+            .map(|stem| stem.to_string_lossy().into_owned())
+            .unwrap_or_default()
+            .replace(".pil", "")
+    })
 }
 
 fn relation_class_boilerplate(
@@ -353,15 +353,31 @@ fn craft_expression<T: FieldElement>(
                 return (1, format!("FF({}UL)", number));
             }
             if number.bit_len() < 256 {
-                let bytes = number.to_le_bytes();
-                let mut chunks: Vec<u64> = bytes.chunks(8).map(|chunk| u64::from_le_bytes(chunk.try_into().unwrap())).collect();
+                let bytes = number.to_be_bytes();
+                println!("{:?}", bytes);
+                println!("size before {}", bytes.len());
+                let padding_len = 32 - bytes.len();
+                // let padding_len = (8 - bytes.len() % 8) % 8;
+                // let padding_len = (8 - bytes.len() % 8) % 8;
+                // bytes.resize(bytes.len() + padding_len, 0);
+
+                let mut padded_bytes = vec![0; padding_len];
+                padded_bytes.extend_from_slice(&bytes);
+                println!("{:?}", padded_bytes);
+                println!("size after {}", padded_bytes.len());
+                // println!("{:?}", padded_bytes);
+                println!("\n");
+
+                let mut chunks: Vec<u64> = padded_bytes.chunks(8).map(|chunk| 
+                    u64::from_be_bytes(chunk.try_into().unwrap())
+                    ).collect();
 
                 chunks.resize(4, 0);
                 return (
                     1,
                     format!(
                         "FF(uint256_t{{{}UL, {}UL, {}UL, {}UL}})",
-                        chunks[0], chunks[1], chunks[2], chunks[3],
+                        chunks[3], chunks[2], chunks[1], chunks[0],
                     ),
                 );
             }
@@ -376,7 +392,11 @@ fn craft_expression<T: FieldElement>(
             collected_cols.insert(poly_name.clone());
             (1, poly_name)
         }
-        Expression::BinaryOperation(AlgebraicBinaryOperation { left: lhe, op, right: rhe }) => {
+        Expression::BinaryOperation(AlgebraicBinaryOperation {
+            left: lhe,
+            op,
+            right: rhe,
+        }) => {
             let (ld, lhs) = craft_expression(lhe, collected_cols, collected_public_identities);
             let (rd, rhs) = craft_expression(rhe, collected_cols, collected_public_identities);
 
@@ -400,7 +420,10 @@ fn craft_expression<T: FieldElement>(
                 _ => unimplemented!("{:?}", expr),
             }
         }
-        Expression::UnaryOperation(AlgebraicUnaryOperation { op: operator, expr: expression }) => match operator {
+        Expression::UnaryOperation(AlgebraicUnaryOperation {
+            op: operator,
+            expr: expression,
+        }) => match operator {
             AlgebraicUnaryOperator::Minus => {
                 let (d, e) =
                     craft_expression(expression, collected_cols, collected_public_identities);

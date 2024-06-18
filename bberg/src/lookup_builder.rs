@@ -2,11 +2,11 @@ use crate::{
     file_writer::BBFiles,
     utils::{create_get_const_entities, create_get_nonconst_entities, snake_case},
 };
+use itertools::Itertools;
 use powdr_ast::{
     analyzed::{AlgebraicExpression, Analyzed, Identity, IdentityKind},
     parsed::SelectedExpressions,
 };
-use itertools::Itertools;
 use powdr_number::FieldElement;
 
 use crate::utils::sanitize_name;
@@ -363,11 +363,7 @@ fn get_lookup_side<F: FieldElement>(
     };
 
     LookupSide {
-        selector: def.selector.as_ref().map(|expr| get_name(expr)),
-        cols: def
-            .expressions
-            .iter()
-            .map(|expr| get_name(expr))
-            .collect_vec(),
+        selector: def.selector.as_ref().map(get_name),
+        cols: def.expressions.iter().map(get_name).collect_vec(),
     }
 }
